@@ -1,34 +1,92 @@
 const express = require('express');
 const expressWs = require('express-ws');
+const cors = require('cors');
+const WebSocket = require('ws');
 
 const app = express();
+app.use(cors());
 expressWs(app);
 
-// Define WebSocket handlers for each route
-app.ws('/websocket/route1', function(ws, req) {
-    ws.on('message', function(msg) {
-        console.log('Received message on route1:', msg);
-        ws.send('Response from route1: ' + msg);
+// Websocket Clients
+const TdataClients = new Set();
+const MessagesClients = new Set();
+const WaypointsClients = new Set();
+const ConnectClients = new Set();
+
+app.ws('/tdata', (ws, req) => {
+  TdataClients.add(ws);
+
+  ws.on('message', (msg) => {
+    // Broadcast message to all clients in '/data' route
+    TdataClients.forEach(client => {
+      if (client !== ws && client.readyState === WebSocket.OPEN) {
+        client.send(msg);
+      }
     });
+  });
+
+  ws.on('close', () => {
+    // Remove closed connection from the clients list
+    TdataClients.delete(ws);
+  });
 });
 
-app.ws('/websocket/route2', function(ws, req) {
-    ws.on('message', function(msg) {
-        console.log('Received message on route2:', msg);
-        ws.send('Response from route2: ' + msg);
+app.ws('/messages', (ws, req) => {
+  MessagesClients.add(ws);
+
+  ws.on('message', (msg) => {
+    // Broadcast message to all clients in '/messages' route
+    MessagesClients.forEach(client => {
+      if (client !== ws && client.readyState === WebSocket.OPEN) {
+        client.send(msg);
+      }
     });
+  });
+
+  ws.on('close', () => {
+    // Remove closed connection from the clients list
+    MessagesClients.delete(ws);
+  });
 });
 
-// Define regular HTTP routes
-app.get('/route1', function(req, res) {
-    res.send('This is route1');
+app.ws('/waypoints', (ws, req) => {
+  WaypointsClients.add(ws);
+
+  ws.on('message', (msg) => {
+    // Broadcast message to all clients in '/messages' route
+    WaypointsClients.forEach(client => {
+      if (client !== ws && client.readyState === WebSocket.OPEN) {
+        //console.log(msg)
+        client.send(msg);
+      }
+    });
+  });
+
+  ws.on('close', () => {
+    // Remove closed connection from the clients list
+    WaypointsClients.delete(ws);
+  });
 });
 
-app.get('/route2', function(req, res) {
-    res.send('This is route2');
+app.ws('/connect', (ws, req) => {
+  ConnectClients.add(ws);
+
+  ws.on('message', (msg) => {
+    // Broadcast message to all clients in '/messages' route
+    ConnectClients.forEach(client => {
+      if (client !== ws && client.readyState === WebSocket.OPEN) {
+        //console.log(msg)
+        client.send(msg);
+      }
+    });
+  });
+
+  ws.on('close', () => {
+    // Remove closed connection from the clients list
+    ConnectClients.delete(ws);
+  });
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-    console.log(`Server listening on port ${PORT}`);
+app.listen(4000, () => {
+  console.log('WebSocket server running on port 4000');
 });
